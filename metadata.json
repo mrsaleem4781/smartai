@@ -1,0 +1,7 @@
+{
+  "name": "Smart AI Passport Photo Maker",
+  "description": "An AI-powered application to enhance low-quality photos, remove backgrounds, and generate print-ready passport-sized photo grids on A6 paper.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}
