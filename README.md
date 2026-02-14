@@ -18,3 +18,4 @@ View your app in AI Studio: https://ai.studio/apps/drive/1h41X4UE_UYXNkLgez7Kq0t
 2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
 3. Run the app:
    `npm run dev`
+"# smartai" 
