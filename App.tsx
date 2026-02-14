@@ -1,8 +1,6 @@
 import React, { useState, useRef, ChangeEvent } from 'react';
 import Header from './components/Header';
 import LayoutPreview from './components/LayoutPreview';
-import React, { useState, useRef, ChangeEvent, forwardRef } from 'react';
-// Types ko check karein ke ye file majood ho (niche di gayi hai)
 import { PhotoState, ProcessingOptions, PhotoSize, PaperSize, BgColor } from './types';
 import { enhanceAndProcessImage } from './services/geminiService';
 import html2canvas from 'html2canvas';
@@ -11,7 +9,6 @@ import {
   RefreshCw, 
   Download, 
   Printer, 
-  Check, 
   AlertCircle, 
   ChevronLeft, 
   ChevronRight, 
@@ -23,115 +20,6 @@ import {
   Image as ImageIcon,
   Palette
 } from 'lucide-react';
-
-type LayoutPreviewProps = {
-  image: string;
-  copies: number;
-  size: PhotoSize;
-  paperSize: PaperSize;
-};
-
-const PHOTO_DIMENSIONS: Record<PhotoSize, { widthMm: number; heightMm: number }> = {
-  [PhotoSize.PASSPORT_PAK]: { widthMm: 35, heightMm: 45 },
-  [PhotoSize.PASSPORT_EU]: { widthMm: 35, heightMm: 45 },
-  [PhotoSize.PASSPORT_US]: { widthMm: 51, heightMm: 51 },
-};
-
-const PAPER_DIMENSIONS: Record<PaperSize, { widthMm: number; heightMm: number }> = {
-  [PaperSize.A4]: { widthMm: 210, heightMm: 297 },
-  [PaperSize.A6]: { widthMm: 105, heightMm: 148 },
-};
-
-const MM_TO_PX = 3.78;
-
-const Header: React.FC = () => {
-  return (
-    <header className="bg-slate-900 text-white border-b border-slate-800">
-      <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="p-2 rounded-lg bg-blue-600/20 border border-blue-400/20">
-            <Check className="w-5 h-5 text-blue-300" />
-          </div>
-          <div>
-            <h1 className="text-lg md:text-xl font-extrabold tracking-tight">Smart AI Passport Photo Maker</h1>
-            <p className="text-[11px] uppercase tracking-[0.2em] text-slate-300">Studio Quality • Print Ready</p>
-          </div>
-        </div>
-
-        <div className="hidden md:flex items-center gap-2 text-xs font-bold text-slate-300">
-          <Sparkles className="w-4 h-4 text-blue-300" />
-          AI Assisted Retouching
-        </div>
-      </div>
-    </header>
-  );
-};
-
-const LayoutPreview = forwardRef<HTMLDivElement, LayoutPreviewProps>(({ image, copies, size, paperSize }, ref) => {
-  const photo = PHOTO_DIMENSIONS[size];
-  const paper = PAPER_DIMENSIONS[paperSize];
-
-  const photoWidthPx = Math.round(photo.widthMm * MM_TO_PX);
-  const photoHeightPx = Math.round(photo.heightMm * MM_TO_PX);
-  const cols = Math.max(1, Math.floor((paper.widthMm * MM_TO_PX - 40) / (photoWidthPx + 12)));
-
-  return (
-    <div
-      ref={ref}
-      className="print-sheet rounded-2xl p-6 bg-white border border-slate-200"
-      style={{ width: Math.round(paper.widthMm * MM_TO_PX), minHeight: Math.round(paper.heightMm * MM_TO_PX) }}
-    >
-      <div
-        className="grid gap-3 justify-center"
-        style={{ gridTemplateColumns: `repeat(${cols}, minmax(${photoWidthPx}px, ${photoWidthPx}px))` }}
-      >
-        {Array.from({ length: copies }).map((_, index) => (
-          <div
-            key={index}
-            className="overflow-hidden rounded border border-slate-200 bg-slate-100"
-            style={{ width: photoWidthPx, height: photoHeightPx }}
-          >
-            <img src={image} alt={`Processed ${index + 1}`} className="w-full h-full object-cover" />
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-});
-
-LayoutPreview.displayName = 'LayoutPreview';
-
-const enhanceAndProcessImage = async (
-  originalImage: string,
-  _backgroundColor: string,
-  _enhance: boolean,
-  _smoothness: number,
-  _sharpness: number
-): Promise<string> => {
-  if (!originalImage) {
-    throw new Error('No image selected.');
-  }
-
-  const img = await new Promise<HTMLImageElement>((resolve, reject) => {
-    const element = new Image();
-    element.onload = () => resolve(element);
-    element.onerror = () => reject(new Error('Unable to load selected image.'));
-    element.src = originalImage;
-  });
-
-  const canvas = document.createElement('canvas');
-  canvas.width = img.naturalWidth;
-  canvas.height = img.naturalHeight;
-
-  const context = canvas.getContext('2d');
-  if (!context) {
-    throw new Error('Canvas rendering is not available in this browser.');
-  }
-
-  context.filter = 'contrast(1.02) saturate(1.04)';
-  context.drawImage(img, 0, 0);
-  return canvas.toDataURL('image/jpeg', 0.96);
-};
 
 const App: React.FC = () => {
   const [step, setStep] = useState<1 | 2>(1);
@@ -151,63 +39,167 @@ const App: React.FC = () => {
     enhance: true,
     smoothness: 40,
     sharpness: 50,
-    customWidth: 35,
-    customHeight: 45
   });
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const printRef = useRef<HTMLDivElement>(null);
   const [isExporting, setIsExporting] = useState(false);
-index.html
-index.html
-+0
--1
 
-@@ -32,32 +32,31 @@
-            .print-sheet {
-                position: absolute;
-                left: 0;
-                top: 0;
-                box-shadow: none;
-                margin: 0;
-                visibility: visible !important;
-            }
-            .print-sheet * {
-                visibility: visible !important;
-            }
-        }
-    </style>
-<script type="importmap">
-{
-  "imports": {
-    "react/": "https://esm.sh/react@^19.2.4/",
-    "react": "https://esm.sh/react@^19.2.4",
-    "@google/genai": "https://esm.sh/@google/genai@^1.41.0",
-    "lucide-react": "https://esm.sh/lucide-react@^0.563.0",
-    "react-dom/": "https://esm.sh/react-dom@^19.2.4/",
-    "html2canvas": "https://esm.sh/html2canvas@^1.4.1"
-  }
-}
-</script>
-<link rel="stylesheet" href="/index.css">
-</head>
-<body>
-    <div id="root"></div>
-<script type="module" src="/index.tsx"></script>
-</body>
-</html>
-text-xs font-black uppercase">Error</span>
-            <span className="text-sm font-medium">{photo.error}</span>
+  const handleFileUpload = (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        setPhoto({ original: event.target?.result as string, processed: null, isProcessing: false, error: null });
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const processImage = async () => {
+    if (!photo.original) return;
+    setPhoto(prev => ({ ...prev, isProcessing: true, error: null }));
+    try {
+      const colorToUse = options.bgColor === BgColor.CUSTOM ? options.customColor : options.bgColor;
+      const result = await enhanceAndProcessImage(photo.original, colorToUse, options.enhance, options.smoothness, options.sharpness);
+      setPhoto(prev => ({ ...prev, processed: result, isProcessing: false }));
+      setStep(2);
+    } catch (err: any) {
+      setPhoto(prev => ({ ...prev, isProcessing: false, error: "AI processing failed. Please try again." }));
+    }
+  };
+
+  const downloadFullSheet = async () => {
+    if (!printRef.current || isExporting) return;
+    setIsExporting(true);
+    try {
+      await new Promise(r => setTimeout(r, 800));
+      const canvas = await html2canvas(printRef.current, { scale: 3, useCORS: true, backgroundColor: '#FFFFFF' });
+      const link = document.createElement('a');
+      link.href = canvas.toDataURL('image/png');
+      link.download = `Passport_Sheet.png`;
+      link.click();
+    } catch (err) {
+      setPhoto(prev => ({ ...prev, error: "Download failed." }));
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  const reset = () => {
+    setPhoto({ original: null, processed: null, isProcessing: false, error: null });
+    setStep(1);
+  };
+
+  return (
+    <div className="min-h-screen bg-[#f3f6fb] flex flex-col font-sans">
+      <Header />
+      <main className="flex-1 max-w-7xl mx-auto w-full px-4 py-8">
+        {step === 1 ? (
+          <div className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
+            <div className="p-8 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
+              <h2 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
+                <Maximize2 className="text-blue-600 w-6 h-6" /> Configure HD Passport
+              </h2>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-12">
+              <div className="lg:col-span-7 p-8 space-y-8">
+                <div 
+                  onClick={() => !photo.original && fileInputRef.current?.click()}
+                  className={`relative border-2 border-dashed rounded-2xl p-10 flex flex-col items-center justify-center transition-all cursor-pointer ${photo.original ? 'border-blue-500 bg-blue-50' : 'border-slate-200 hover:border-blue-400'}`}
+                >
+                  {photo.original ? (
+                    <div className="relative">
+                      <img src={photo.original} className="w-40 h-52 object-cover rounded-lg shadow-xl border-4 border-white" alt="Original" />
+                      <button onClick={(e) => { e.stopPropagation(); reset(); }} className="absolute -top-4 -right-4 p-2 bg-red-500 text-white rounded-full"><X className="w-4 h-4" /></button>
+                    </div>
+                  ) : (
+                    <div className="text-center">
+                      <Upload className="w-12 h-12 text-blue-400 mx-auto mb-4" />
+                      <p className="text-blue-600 font-bold">Click to Upload Photo</p>
+                    </div>
+                  )}
+                  <input type="file" ref={fileInputRef} onChange={handleFileUpload} accept="image/*" className="hidden" />
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-6">
+                   <div className="space-y-2">
+                      <label className="text-xs font-black text-slate-500 uppercase">Skin Smoothing ({options.smoothness}%)</label>
+                      <input type="range" min="0" max="100" value={options.smoothness} onChange={(e) => setOptions({...options, smoothness: parseInt(e.target.value)})} className="w-full" />
+                   </div>
+                   <div className="space-y-2">
+                      <label className="text-xs font-black text-slate-500 uppercase">Detail Sharpness ({options.sharpness}%)</label>
+                      <input type="range" min="0" max="100" value={options.sharpness} onChange={(e) => setOptions({...options, sharpness: parseInt(e.target.value)})} className="w-full" />
+                   </div>
+                </div>
+
+                <div className="flex gap-4 pt-4">
+                  {[BgColor.WHITE, BgColor.LIGHT_BLUE, BgColor.DARK_BLUE].map(c => (
+                    <button key={c} onClick={() => setOptions({...options, bgColor: c})} className={`w-10 h-10 rounded-full border-4 ${options.bgColor === c ? 'border-blue-600' : 'border-white shadow'}`} style={{backgroundColor: c}} />
+                  ))}
+                </div>
+              </div>
+
+              <div className="lg:col-span-5 bg-slate-50 p-8 border-l border-gray-100">
+                <div className="space-y-4">
+                   <h4 className="font-bold text-slate-700">Instructions:</h4>
+                   <ul className="text-sm text-slate-500 space-y-2">
+                     <li className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-emerald-500"/> Face the camera directly</li>
+                     <li className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-emerald-500"/> Use good lighting</li>
+                   </ul>
+                </div>
+              </div>
+            </div>
+
+            <div className="p-8 bg-slate-900">
+               <button 
+                onClick={processImage}
+                disabled={!photo.original || photo.isProcessing}
+                className="w-full py-4 bg-blue-600 text-white rounded-xl font-bold text-xl flex items-center justify-center gap-4 disabled:opacity-50"
+               >
+                 {photo.isProcessing ? <RefreshCw className="animate-spin" /> : <Sparkles />}
+                 {photo.isProcessing ? 'Processing...' : 'Enhance & Generate'}
+               </button>
+            </div>
           </div>
-          <button onClick={() => setPhoto({...photo, error: null})} className="ml-4 p-1 hover:bg-white/20 rounded-lg"><X className="w-5 h-5"/></button>
+        ) : (
+          <div className="space-y-6">
+             <div className="flex justify-between items-center bg-white p-6 rounded-2xl shadow-sm no-print">
+                <button onClick={() => setStep(1)} className="flex items-center gap-2 text-slate-500 font-bold"><ChevronLeft /> Back</button>
+                <div className="flex gap-4">
+                  <button onClick={downloadFullSheet} className="px-6 py-3 bg-blue-600 text-white rounded-xl font-bold flex items-center gap-2 hover:bg-blue-700">
+                    <Download className="w-4 h-4" /> Save Sheet
+                  </button>
+                  <button onClick={() => window.print()} className="px-6 py-3 bg-slate-900 text-white rounded-xl font-bold flex items-center gap-2">
+                    <Printer className="w-4 h-4" /> Print
+                  </button>
+                </div>
+             </div>
+
+             <div className="flex justify-center bg-slate-200 p-10 rounded-3xl overflow-auto">
+                {photo.processed && (
+                  <LayoutPreview 
+                    ref={printRef}
+                    image={photo.processed} 
+                    copies={options.copies} 
+                    size={options.size} 
+                    paperSize={options.paperSize}
+                  />
+                )}
+             </div>
+          </div>
+        )}
+      </main>
+
+      {photo.error && (
+        <div className="fixed bottom-10 left-1/2 -translate-x-1/2 p-4 bg-red-600 text-white rounded-xl shadow-2xl flex items-center gap-3">
+          <AlertCircle /> {photo.error}
+          <button onClick={() => setPhoto({...photo, error: null})}><X /></button>
         </div>
       )}
     </div>
   );
 };
 
-<<<<<<< HEAD
 export default App;
-=======
-export default App;
->>>>>>> ca2656e613e63ed0ca06b1cde5fcaff34e7bfb7d
